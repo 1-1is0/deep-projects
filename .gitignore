@@ -1,6 +1,5 @@
 __pycache__/
 *.mp4
-import touch as touch
 *.pdf
 *.zip
 data/
