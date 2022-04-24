@@ -7,15 +7,16 @@ from skimage import io, transform, color
 from torch.utils.data import Dataset
 from torchvision import models
 
-def load_data():
+
+def load_data(path="data/tiny-imagenet-200/train/*"):
     np.random.seed(42)
-    all_dirs = glob("data/tiny-imagenet-200/train/*")
+    all_dirs = glob(path)
     dirs = np.random.choice(all_dirs, 22)
     data = []
     for img_dir in dirs:
         imgs_in_dir = glob(img_dir + "/images/*.JPEG")
         name = img_dir.split("/")[-1]
-        for img in imgs_in_dir[:50]:
+        for img in imgs_in_dir:
             data.append([name, img])
 
     data_df = pd.DataFrame(data, columns=["name", "image"])
@@ -29,13 +30,16 @@ torch.cuda.is_available()
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 activation = {}
+
+
 def get_activation(name):
     def hook(model, input, output):
         activation[name] = output.detach()
+
     return hook
 
-class ImageDataset(Dataset):
 
+class ImageDataset(Dataset):
     def __init__(self, df, transform=None, alexnet_feature=None):
         """
         Args:
@@ -63,12 +67,12 @@ class ImageDataset(Dataset):
             image = color.gray2rgb(image)
         # adds another dimension to the image channel
         name = f"{self.df.iloc[idx].name}"
-        sample = {'name': name, 'image': image}
+        sample = {"name": name, "image": image}
         # print("name", sample['name'], sample['image'].shape)
         if self.transform:
-            sample['image'] = self.transform(sample['image'])
+            sample["image"] = self.transform(sample["image"])
         if self.alexnet_feature:
-            sample['alex'] = self.alexnet_feature(sample['image'])
+            sample["alex"] = self.alexnet_feature(sample["image"])
 
         return sample
 
@@ -78,9 +82,10 @@ class ToTensor(object):
         image = image.transpose((2, 0, 1))
         return torch.from_numpy(image).float()
 
+
 class Rescale(object):
     def __init__(self, output_size):
-        self.output_size = output_size # tuple
+        self.output_size = output_size  # tuple
 
     def __call__(self, image):
 
@@ -90,10 +95,12 @@ class Rescale(object):
         img = transform.resize(image, (new_h, new_w))
         return img
 
+
 class GetAlexConv(object):
     """
     Returns the feature map layer of the AlexNet model
     """
+
     def __init__(self, layer_number, layer_name):
         self.layer_number = layer_number
         self.layer_name = layer_name
@@ -110,4 +117,3 @@ class GetAlexConv(object):
         self.alex(batch)
         feature = activation[self.layer_name].squeeze(0)
         return feature
-

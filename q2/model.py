@@ -1,3 +1,5 @@
+import os
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -123,14 +125,14 @@ class AlexFc8(nn.Module):
 def train_model(
     data_loader, dataset_size, model, criterion, optimizer, scheduler, epochs, device
 ):
-    import os
+
     state_res = {}
-    if os.path.exists("state.pth"):
-        state = torch.load('state.pth')
-        model.load_state_dict(state['state_dict'])
-        optimizer.load_state_dict(state['optimizer'])
-        scheduler.load_state_dict(state['scheduler'])
-        state_res = state['res']
+    if os.path.exists(f"state-{model._get_name()}.pth"):
+        state = torch.load("state.pth")
+        model.load_state_dict(state["state_dict"])
+        optimizer.load_state_dict(state["optimizer"])
+        scheduler.load_state_dict(state["scheduler"])
+        state_res = state["res"]
 
     res = {
         "epoch_loss_train": state_res.get("epoch_loss_train", []),
@@ -191,12 +193,12 @@ def train_model(
             res[f"loss_history_{phase}"].append(running_loss)
 
         state = {
-            'epoch': epoch,
-            'state_dict': model.state_dict(),
-            'optimizer': optimizer.state_dict(),
+            "epoch": epoch,
+            "state_dict": model.state_dict(),
+            "optimizer": optimizer.state_dict(),
             "scheduler": scheduler.state_dict(),
             "res": res,
         }
-        torch.save(state, 'state.pth')
+        torch.save(state, f"state-{model._get_name()}.pth")
     print("Finished Training")
     return res
