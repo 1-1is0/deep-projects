@@ -123,16 +123,26 @@ class AlexFc8(nn.Module):
 
 
 def train_model(
-    data_loader, dataset_size, model, criterion, optimizer, scheduler, epochs, device
+    data_loader,
+    dataset_size,
+    model,
+    criterion,
+    optimizer,
+    scheduler,
+    epochs,
+    device,
+    path="/content/drive/MyDrive/data/state",
 ):
-
+    state_file_name = f"{path}/state-{model._get_name()}.pth"
     state_res = {}
-    if os.path.exists(f"state-{model._get_name()}.pth"):
-        state = torch.load(f"state-{model._get_name()}.pth")
+    state_epoch = 0
+    if os.path.exists(state_file_name):
+        state = torch.load(state_file_name)
         model.load_state_dict(state["state_dict"])
         optimizer.load_state_dict(state["optimizer"])
         scheduler.load_state_dict(state["scheduler"])
         state_res = state["res"]
+        state_epoch = state["epoch"]
 
     res = {
         "epoch_loss_train": state_res.get("epoch_loss_train", []),
@@ -141,6 +151,8 @@ def train_model(
         "epoch_loss_val": state_res.get("epoch_loss_val", []),
         "loss_history_val": state_res.get("loss_history_val", []),
     }
+    # remaining epochs
+    epochs = epochs - state_epoch
     # loss_history = []
     # epochs_loss = []
     for epoch in range(epochs):  # loop over the dataset multiple times
@@ -199,6 +211,6 @@ def train_model(
             "scheduler": scheduler.state_dict(),
             "res": res,
         }
-        torch.save(state, f"state-{model._get_name()}.pth")
+        torch.save(state, state_file_name)
     print("Finished Training")
     return res
