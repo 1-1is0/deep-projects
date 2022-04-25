@@ -4,7 +4,7 @@ from glob import glob
 import numpy as np
 import pandas as pd
 import torch
-from skimage import io, color
+from skimage import io, transform, color
 from torch.utils.data import Dataset
 
 np.random.seed(42)
