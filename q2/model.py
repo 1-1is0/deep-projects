@@ -128,7 +128,7 @@ def train_model(
 
     state_res = {}
     if os.path.exists(f"state-{model._get_name()}.pth"):
-        state = torch.load("state.pth")
+        state = torch.load(f"state-{model._get_name()}.pth")
         model.load_state_dict(state["state_dict"])
         optimizer.load_state_dict(state["optimizer"])
         scheduler.load_state_dict(state["scheduler"])
