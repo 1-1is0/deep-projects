@@ -18,11 +18,21 @@ class AlexConv2(nn.Module):
         self.conv1 = nn.Conv2d(192, 256, kernel_size=3, stride=1, padding=1)
         self.conv2 = nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1)
         self.conv3 = nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1)
-        self.upconv1 = nn.ConvTranspose2d(256, 256, kernel_size=5, stride=2, padding=2, output_padding=1)
-        self.upconv2 = nn.ConvTranspose2d(256, 128, kernel_size=5, stride=2, padding=2, output_padding=1)
-        self.upconv3 = nn.ConvTranspose2d(128, 64, kernel_size=5, stride=2, padding=2, output_padding=1)
-        self.upconv4 = nn.ConvTranspose2d(64, 32, kernel_size=5, stride=2, padding=2, output_padding=1)
-        self.upconv5 = nn.ConvTranspose2d(32, 3, kernel_size=5, stride=2, padding=2, output_padding=1)
+        self.upconv1 = nn.ConvTranspose2d(
+            256, 256, kernel_size=5, stride=2, padding=2, output_padding=1
+        )
+        self.upconv2 = nn.ConvTranspose2d(
+            256, 128, kernel_size=5, stride=2, padding=2, output_padding=1
+        )
+        self.upconv3 = nn.ConvTranspose2d(
+            128, 64, kernel_size=5, stride=2, padding=2, output_padding=1
+        )
+        self.upconv4 = nn.ConvTranspose2d(
+            64, 32, kernel_size=5, stride=2, padding=2, output_padding=1
+        )
+        self.upconv5 = nn.ConvTranspose2d(
+            32, 3, kernel_size=5, stride=2, padding=2, output_padding=1
+        )
 
     def forward(self, x):
         x = self.alexnet.features(x)
@@ -49,20 +59,37 @@ class AlexConv2(nn.Module):
                 if m.bias is not None:
                     m.bias.data.zero_()
 
+
 class AlexConv5(nn.Module):
     def __init__(self):
         super(AlexConv5, self).__init__()
+        self.alexnet = models.alexnet(pretrained=True)
+        for params in self.alexnet.parameters():
+            params.requires_grad = False
+        # self.alexnet.features = self.alexnet.features[:6]
+
+        self.conv1 = nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1)
         self.conv2 = nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1)
         self.conv3 = nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1)
-        self.upconv1 = nn.ConvTranspose2d(256, 256, kernel_size=5, stride=2, padding=2)
-        self.upconv2 = nn.ConvTranspose2d(256, 128, kernel_size=5, stride=2, padding=1)
-        self.upconv3 = nn.ConvTranspose2d(128, 64, kernel_size=5, stride=2, padding=1)
-        self.upconv4 = nn.ConvTranspose2d(64, 32, kernel_size=5, stride=2, padding=1)
+        self.upconv1 = nn.ConvTranspose2d(
+            256, 256, kernel_size=5, stride=2, padding=1, output_padding=1
+        )
+        self.upconv2 = nn.ConvTranspose2d(
+            256, 128, kernel_size=5, stride=2, padding=1, output_padding=1
+        )
+        self.upconv3 = nn.ConvTranspose2d(
+            128, 64, kernel_size=5, stride=2, padding=1, output_padding=1
+        )
+        self.upconv4 = nn.ConvTranspose2d(
+            64, 32, kernel_size=5, stride=2, padding=1, output_padding=1
+        )
         self.upconv5 = nn.ConvTranspose2d(
             32, 3, kernel_size=5, stride=2, padding=1, output_padding=1
         )
 
     def forward(self, x):
+        x = self.alexnet.features(x)
+        x = F.leaky_relu(self.conv1(x))
         x = F.leaky_relu(self.conv2(x))
         x = F.leaky_relu(self.conv3(x))
         x = F.leaky_relu(self.upconv1(x))
@@ -70,6 +97,7 @@ class AlexConv5(nn.Module):
         x = F.leaky_relu(self.upconv3(x))
         x = F.leaky_relu(self.upconv4(x))
         x = F.leaky_relu(self.upconv5(x))
+        x = F.interpolate(x, 227)
         return x
 
     def initialize_weights(self):
@@ -88,6 +116,11 @@ class AlexConv5(nn.Module):
 class AlexFc6(nn.Module):
     def __init__(self):
         super(AlexFc6, self).__init__()
+        self.alexnet = models.alexnet(pretrained=True)
+        for params in self.alexnet.parameters():
+            params.requires_grad = False
+        self.alexnet.classifier = self.alexnet.classifier[:4]
+
         self.fc1 = nn.Linear(4096, 4096)
         self.fc2 = nn.Linear(4096, 4096)
         self.fc3 = nn.Linear(4096, 4096)
@@ -108,6 +141,7 @@ class AlexFc6(nn.Module):
         )
 
     def forward(self, x):
+        x = self.alexnet(x)
         x = F.leaky_relu(self.fc1(x))
         x = F.leaky_relu(self.fc2(x))
         x = F.leaky_relu(self.fc3(x))
@@ -117,12 +151,30 @@ class AlexFc6(nn.Module):
         x = F.leaky_relu(self.upconv3(x))
         x = F.leaky_relu(self.upconv4(x))
         x = F.leaky_relu(self.upconv5(x))
+        x = F.interpolate(x, 277)
         return x
+
+
+    def initialize_weights(self):
+        # https://www.askpython.com/python-modules/initialize-model-weights-pytorch
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                nn.init.xavier_normal_(m.weight)
+                if m.bias is not None:
+                    m.bias.data.zero_()
+            elif isinstance(m, nn.ConvTranspose2d):
+                nn.init.normal_(m.weight, mean=0, std=0.01)
+                if m.bias is not None:
+                    m.bias.data.zero_()
 
 
 class AlexFc8(nn.Module):
     def __init__(self):
         super(AlexFc8, self).__init__()
+        self.alexnet = models.alexnet(pretrained=True)
+        for params in self.alexnet.parameters():
+            params.requires_grad = False
+
         self.fc1 = nn.Linear(1000, 4096)
         self.fc2 = nn.Linear(4096, 4096)
         self.fc3 = nn.Linear(4096, 4096)
@@ -143,6 +195,7 @@ class AlexFc8(nn.Module):
         )
 
     def forward(self, x):
+        x = self.alexnet(x)
         x = F.leaky_relu(self.fc1(x))
         x = F.leaky_relu(self.fc2(x))
         x = F.leaky_relu(self.fc3(x))
@@ -152,8 +205,21 @@ class AlexFc8(nn.Module):
         x = F.leaky_relu(self.upconv3(x))
         x = F.leaky_relu(self.upconv4(x))
         x = F.leaky_relu(self.upconv5(x))
+        x = F.interpolate(x, 277)
         return x
 
+
+    def initialize_weights(self):
+        # https://www.askpython.com/python-modules/initialize-model-weights-pytorch
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                nn.init.xavier_normal_(m.weight)
+                if m.bias is not None:
+                    m.bias.data.zero_()
+            elif isinstance(m, nn.ConvTranspose2d):
+                nn.init.normal_(m.weight, mean=0, std=0.01)
+                if m.bias is not None:
+                    m.bias.data.zero_()
 
 def train_model(
     data_loader,
