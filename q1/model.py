@@ -86,10 +86,10 @@ def train_model(
         "loss_history_val": state_res.get("loss_history_val", []),
     }
     # remaining epochs
-    epochs = epochs - state_epoch
+#     epochs = epochs - state_epoch
     # loss_history = []
     # epochs_loss = []
-    for epoch in range(epochs):  # loop over the dataset multiple times
+    for epoch in range(state_epoch, epochs):  # loop over the dataset multiple times
 
         for phase in ["train", "val"]:
             if phase == "train":
