@@ -4,20 +4,29 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torchvision.transforms.functional as fn
+from torchvision import models
 
 
 class AlexConv2(nn.Module):
     def __init__(self):
         super(AlexConv2, self).__init__()
-        self.conv2 = nn.Conv2d(192, 192, kernel_size=3, stride=1, padding=1)
-        self.conv3 = nn.Conv2d(192, 192, kernel_size=3, stride=1, padding=1)
-        self.upconv1 = nn.ConvTranspose2d(192, 192, kernel_size=5, stride=2, padding=1)
-        self.upconv2 = nn.ConvTranspose2d(192, 96, kernel_size=5, stride=2, padding=1)
-        self.upconv3 = nn.ConvTranspose2d(96, 48, kernel_size=5, stride=2, padding=1)
-        self.upconv4 = nn.ConvTranspose2d(48, 24, kernel_size=5, stride=2, padding=1)
-        self.upconv5 = nn.ConvTranspose2d(24, 3, kernel_size=5, stride=1, padding=0)
+        self.alexnet = models.alexnet(pretrained=True)
+        for params in self.alexnet.parameters():
+            params.requires_grad = False
+        self.alexnet.features = self.alexnet.features[:6]
+
+        self.conv1 = nn.Conv2d(192, 256, kernel_size=3, stride=1, padding=1)
+        self.conv2 = nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1)
+        self.conv3 = nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1)
+        self.upconv1 = nn.ConvTranspose2d(256, 256, kernel_size=5, stride=2, padding=2, output_padding=1)
+        self.upconv2 = nn.ConvTranspose2d(256, 128, kernel_size=5, stride=2, padding=2, output_padding=1)
+        self.upconv3 = nn.ConvTranspose2d(128, 64, kernel_size=5, stride=2, padding=2, output_padding=1)
+        self.upconv4 = nn.ConvTranspose2d(64, 32, kernel_size=5, stride=2, padding=2, output_padding=1)
+        self.upconv5 = nn.ConvTranspose2d(32, 3, kernel_size=5, stride=2, padding=2, output_padding=1)
 
     def forward(self, x):
+        x = self.alexnet.features(x)
+        x = F.leaky_relu(self.conv1(x))
         x = F.leaky_relu(self.conv2(x))
         x = F.leaky_relu(self.conv3(x))
         x = F.leaky_relu(self.upconv1(x))
@@ -25,8 +34,20 @@ class AlexConv2(nn.Module):
         x = F.leaky_relu(self.upconv3(x))
         x = F.leaky_relu(self.upconv4(x))
         x = F.leaky_relu(self.upconv5(x))
+        x = F.interpolate(x, 227)
         return x
 
+    def initialize_weights(self):
+        # https://www.askpython.com/python-modules/initialize-model-weights-pytorch
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                nn.init.xavier_normal_(m.weight)
+                if m.bias is not None:
+                    m.bias.data.zero_()
+            elif isinstance(m, nn.ConvTranspose2d):
+                nn.init.normal_(m.weight, mean=0, std=0.01)
+                if m.bias is not None:
+                    m.bias.data.zero_()
 
 class AlexConv5(nn.Module):
     def __init__(self):
@@ -50,6 +71,18 @@ class AlexConv5(nn.Module):
         x = F.leaky_relu(self.upconv4(x))
         x = F.leaky_relu(self.upconv5(x))
         return x
+
+    def initialize_weights(self):
+        # https://www.askpython.com/python-modules/initialize-model-weights-pytorch
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                nn.init.xavier_normal_(m.weight)
+                if m.bias is not None:
+                    m.bias.data.zero_()
+            elif isinstance(m, nn.ConvTranspose2d):
+                nn.init.normal_(m.weight, mean=0, std=0.01)
+                if m.bias is not None:
+                    m.bias.data.zero_()
 
 
 class AlexFc6(nn.Module):
@@ -170,15 +203,14 @@ def train_model(
                 # get the inputs; data is a list of [inputs, labels]
                 # name, image, fix_map = data
                 image = data["image"].to(device)
-                input_image = data["alex"].to(device)
+                # input_image = data["alex"].to(device)
                 optimizer.zero_grad()
                 # forward + backward + optimize
-                outputs = model(input_image)
+                outputs = model(image)
                 # resize the image
-                target_size = outputs.size()[-1]
-                image_resize = fn.resize(image, size=target_size)
-
-                loss = criterion(outputs, image_resize)
+                # target_size = outputs.size()[-1]
+                # image_resize = fn.resize(image, size=target_size)
+                loss = criterion(outputs, image)
                 if phase == "train":
                     loss.backward()
                     optimizer.step()
