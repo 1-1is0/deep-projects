@@ -14,7 +14,7 @@ def load_data(path="data/Stimuli/*/*.jpg"):
     all_images = glob(path)
     # print(all_images)
     data = []
-    for img in all_images[:100]:
+    for img in all_images:
         stimuli = img.split("/")[2]
         data.append([stimuli, img, img.replace("Stimuli", "FIXATIONMAPS")])
 

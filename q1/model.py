@@ -76,7 +76,7 @@ def train_model(
         optimizer.load_state_dict(state["optimizer"])
         scheduler.load_state_dict(state["scheduler"])
         state_res = state["res"]
-        state_epoch = state["epoch"]
+        state_epoch = state["epoch"] + 1
 
     res = {
         "epoch_loss_train": state_res.get("epoch_loss_train", []),
@@ -85,8 +85,6 @@ def train_model(
         "epoch_loss_val": state_res.get("epoch_loss_val", []),
         "loss_history_val": state_res.get("loss_history_val", []),
     }
-    # remaining epochs
-#     epochs = epochs - state_epoch
     # loss_history = []
     # epochs_loss = []
     for epoch in range(state_epoch, epochs):  # loop over the dataset multiple times
@@ -116,7 +114,6 @@ def train_model(
                 # print statistics
                 # print("data shape", data["image"].shape)
                 now_batch_size = data["image"].size()[0]
-                # print("len dataloader", dataset_size[phase], "now batch size", now_batch_size)
                 running_loss += loss.item() * now_batch_size
             # add loss at the end of each iteration
             # loss_history.append(running_loss)
@@ -127,6 +124,7 @@ def train_model(
             print(phase, len(data_loader[phase]))
             print("epoch", epoch, running_loss / len(data_loader[phase]))
 
+            print("running loss", running_loss)
             epoch_loss = running_loss / dataset_size[phase]
             res[f"epoch_loss_{phase}"].append(epoch_loss)
             res[f"loss_history_{phase}"].append(running_loss)
