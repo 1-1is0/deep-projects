@@ -18,6 +18,7 @@ class AlexConv2(nn.Module):
         self.conv1 = nn.Conv2d(192, 256, kernel_size=3, stride=1, padding=1)
         self.conv2 = nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1)
         self.conv3 = nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1)
+        self.batchnorm1 = nn.BatchNorm2d(256)
         self.upconv1 = nn.ConvTranspose2d(
             256, 256, kernel_size=5, stride=2, padding=2, output_padding=1
         )
@@ -39,6 +40,7 @@ class AlexConv2(nn.Module):
         x = F.leaky_relu(self.conv1(x))
         x = F.leaky_relu(self.conv2(x))
         x = F.leaky_relu(self.conv3(x))
+        x = F.leaky_relu(self.batchnorm1(x))
         x = F.leaky_relu(self.upconv1(x))
         x = F.leaky_relu(self.upconv2(x))
         x = F.leaky_relu(self.upconv3(x))
@@ -56,6 +58,10 @@ class AlexConv2(nn.Module):
                     m.bias.data.zero_()
             elif isinstance(m, nn.ConvTranspose2d):
                 nn.init.normal_(m.weight, mean=0, std=0.01)
+                if m.bias is not None:
+                    m.bias.data.zero_()
+            elif isinstance(m, nn.BatchNorm2d):
+                m.weight.data.fill_(1)
                 if m.bias is not None:
                     m.bias.data.zero_()
 
@@ -233,6 +239,7 @@ def train_model(
     path="/content/drive/MyDrive/data/state",
 ):
     state_file_name = f"{path}/state-{model._get_name()}.pth"
+    print("state_file_name", state_file_name)
     state_res = {}
     state_epoch = 0
     if os.path.exists(state_file_name):
@@ -296,9 +303,10 @@ def train_model(
                 res["lr"].append(optimizer.param_groups[0]["lr"])
                 scheduler.step()
 
-            print("epoch", epoch, running_loss / len(data_loader[phase]))
 
             epoch_loss = running_loss / dataset_size[phase]
+
+            print("epoch", epoch, epoch_loss)
             res[f"epoch_loss_{phase}"].append(epoch_loss)
             res[f"loss_history_{phase}"].append(running_loss)
 

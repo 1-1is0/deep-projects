@@ -56,6 +56,8 @@ def show_im():
     net = Net().to(device)
     print(net)
     with torch.no_grad():
+        net.load_state_dict(state['state_dict'])
+        net.eval()
 
         fig, ax = plt.subplots(6, 3, figsize=(10, 15))
         fig.suptitle('Prediction')
@@ -63,8 +65,6 @@ def show_im():
             rand_num = np.random.randint(0, len(train_dataset))
             sample = train_dataset[rand_num]
             # i = i.unsqueeze(0)
-            net.load_state_dict(state['state_dict'])
-            net.eval()
             predict = net(sample['image'].float())
 
             ax[i, 0].imshow(sample['image'].permute(1, 2, 0).detach().numpy())

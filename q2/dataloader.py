@@ -1,11 +1,11 @@
 from glob import glob
-
+from PIL import Image
 import numpy as np
 import pandas as pd
 import torch
 from skimage import io, transform, color
 from torch.utils.data import Dataset
-from torchvision import models
+from torchvision import models, transforms
 
 
 def load_data(path="data/tiny-imagenet-200/train/*"):
@@ -23,7 +23,7 @@ def load_data(path="data/tiny-imagenet-200/train/*"):
 
     test_df = data_df.groupby("name").sample(n=20)
     train_df = data_df[~data_df.index.isin(test_df.index)]
-    return train_df, test_df
+    return train_df.head(200), test_df.head(20)
 
 
 torch.cuda.is_available()
@@ -59,20 +59,14 @@ class ImageDataset(Dataset):
     def __getitem__(self, idx):
         if torch.is_tensor(idx):
             idx = idx.tolist()
-
-        image = io.imread(self.df.iloc[idx].image)
-        # image = read_image(self.df.iloc[idx].image).float()
-        # image = Image.open(self.df.iloc[idx].image)
-        if len(image.shape) == 2:
-            image = color.gray2rgb(image)
+        image = Image.open(self.df.iloc[idx].image)
+        image = image.convert("RGB")
         # adds another dimension to the image channel
         name = f"{self.df.iloc[idx].name}"
         sample = {"name": name, "image": image}
         # print("name", sample['name'], sample['image'].shape)
         if self.transform:
             sample["image"] = self.transform(sample["image"])
-        if self.alexnet_feature:
-            sample["alex"] = self.alexnet_feature(sample["image"])
 
         return sample
 
@@ -117,3 +111,42 @@ class GetAlexConv(object):
         self.alex(batch)
         feature = activation[self.layer_name].squeeze(0)
         return feature
+
+def get_datasets(train_df, test_df):
+
+    train_dataset = ImageDataset(
+        train_df,
+        transform=transforms.Compose(
+            [
+                transforms.Resize((227, 227)),
+                transforms.ToTensor(),
+                # transforms.Normalize(
+                #     mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+                # ),
+            ]
+        )
+    )
+    test_dataset = ImageDataset(
+        test_df,
+        transform=transforms.Compose(
+            [
+                transforms.Resize((227, 227)),
+                transforms.ToTensor(),
+                # transforms.Normalize(
+                #     mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+                # ),
+            ]
+        )
+    )
+    return train_dataset, test_dataset
+
+def get_data_loader(train_dataset, test_dataset, batch_size=64):
+
+    trainloader = torch.utils.data.DataLoader(
+        train_dataset, batch_size=64, shuffle=True, num_workers=2
+    )
+    testloader = torch.utils.data.DataLoader(
+        test_dataset, batch_size=64, shuffle=True, num_workers=2
+    )
+
+    return trainloader, testloader
