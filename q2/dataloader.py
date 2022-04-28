@@ -120,9 +120,9 @@ def get_datasets(train_df, test_df):
             [
                 transforms.Resize((227, 227)),
                 transforms.ToTensor(),
-                # transforms.Normalize(
-                #     mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
-                # ),
+                transforms.Normalize(
+                    mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+                ),
             ]
         )
     )
@@ -132,8 +132,8 @@ def get_datasets(train_df, test_df):
             [
                 transforms.Resize((227, 227)),
                 transforms.ToTensor(),
-                # transforms.Normalize(
-                #     mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+                transforms.Normalize(
+                    mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
                 # ),
             ]
         )
