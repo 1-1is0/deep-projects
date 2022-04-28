@@ -23,7 +23,7 @@ def load_data(path="data/tiny-imagenet-200/train/*"):
 
     test_df = data_df.groupby("name").sample(n=20)
     train_df = data_df[~data_df.index.isin(test_df.index)]
-    return train_df.head(200), test_df.head(20)
+    return train_df, test_df
 
 
 torch.cuda.is_available()
