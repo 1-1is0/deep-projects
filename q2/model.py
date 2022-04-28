@@ -151,7 +151,7 @@ class AlexFc6(nn.Module):
         x = F.leaky_relu(self.upconv3(x))
         x = F.leaky_relu(self.upconv4(x))
         x = F.leaky_relu(self.upconv5(x))
-        x = F.interpolate(x, 277)
+        x = F.interpolate(x, 227)
         return x
 
 
@@ -205,7 +205,7 @@ class AlexFc8(nn.Module):
         x = F.leaky_relu(self.upconv3(x))
         x = F.leaky_relu(self.upconv4(x))
         x = F.leaky_relu(self.upconv5(x))
-        x = F.interpolate(x, 277)
+        x = F.interpolate(x, 227)
         return x
 
 
