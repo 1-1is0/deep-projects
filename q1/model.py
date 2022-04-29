@@ -14,11 +14,11 @@ class Net(nn.Module):
         # 1 input image channel, 6 output channels, 3x3 square convolution
         # kernel
 
-        self.conv1 = nn.Conv2d(3, 48, 7, stride=1, padding=3)
+        self.conv1 = nn.Conv2d(3, 48, kernel_size=7, stride=1, padding=3)
         self.local_response_norm = nn.LocalResponseNorm(size=5, alpha=0.0001, beta=0.75)
-        self.max_pool1 = nn.MaxPool2d((3, 3), stride=2)
+        self.max_pool1 = nn.MaxPool2d(kernel_size=3, stride=2, padding=0)
         self.conv2 = nn.Conv2d(48, 128, 5, stride=1, padding=2)
-        self.max_pool2 = nn.MaxPool2d((3, 3), stride=2, padding=0)
+        self.max_pool2 = nn.MaxPool2d(kernel_size=3, stride=2, padding=0)
         self.conv3 = nn.Conv2d(128, 256, kernel_size=3, stride=1, padding=1)
         self.conv4 = nn.Conv2d(256, 256, kernel_size=5, stride=1, padding=2)
         self.conv5 = nn.Conv2d(256, 256, kernel_size=5, stride=1, padding=2)
@@ -121,11 +121,9 @@ def train_model(
                 res["lr"].append(optimizer.param_groups[0]["lr"])
                 scheduler.step()
 
-            print(phase, len(data_loader[phase]))
-            print("epoch", epoch, running_loss / len(data_loader[phase]))
-
             print("running loss", running_loss)
             epoch_loss = running_loss / dataset_size[phase]
+            print("epoch", epoch, epoch_loss)
             res[f"epoch_loss_{phase}"].append(epoch_loss)
             res[f"loss_history_{phase}"].append(running_loss)
 
